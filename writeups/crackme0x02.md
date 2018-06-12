@@ -2,7 +2,7 @@
 
 Far too in-depth line-by-line write-up of reverse engineering Crackme0x02 from [this repo](https://github.com/leotindall/crackmes)
 
-The source for the same crackme's are also hosted in this repo in the [crackmes](crackmes) directory
+The source for the same crackme's are also hosted in this repo in the [crackmes](/crackmes) directory
 
 The [tutorial](https://leotindall.com/tutorial/an-intro-to-x86_64-reverse-engineering/) for this Crackme reviews a dissassembly that was different than the one I had when I ran it through objdump and radare2 both on my mac and a virtual linux box.
 
