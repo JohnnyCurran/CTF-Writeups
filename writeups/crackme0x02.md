@@ -75,7 +75,7 @@ mov rdx, rax
 movsx eax, byte[rdx]
 ```
 
-So - after all is said and done, `eax` contains the lowest byte of the value stored at memory location `rax`, or `0x00000f76` which we know contains the string `password1`. The first byte of this string is `p`.
+So - after all is said and done, `eax` contains the lowest byte of the value stored at memory location `rax`, or `0x10000f76` which we know contains the string `password1`. The first byte of this string is `p`.
 
 The next instruction, `cmp eax,0` compares this value to 0. This comparison will of course always fail, as `p` will never be equal to `0`.
 
@@ -127,6 +127,8 @@ It was at this point that I patched the binary by writing a `jmp` to the `jne` i
 I saved the altered binary as crackme02_patch and the binary now accepts any password you pass to it:
 
 ```bash
-crackme02_patch wrongPassword
+./crackme02_patch wrongPassword
 Yes, wrongPassword is correct!
 ```
+
+If you're so inclined, you can get the patched binary under the [patched crackme's](/patchedCrackmes) directory of the repo
