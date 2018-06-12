@@ -1,4 +1,4 @@
-## Crackme0x02 macOS Patch
+## Crackme0x02 Patch
 
 Patch applied to this crackme makes the binary accept any password e.g.
 
