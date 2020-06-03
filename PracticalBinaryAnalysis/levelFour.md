@@ -53,12 +53,12 @@ Running `strings` on the binary reveals one interesting string:
 binary@binary-VirtualBox:~/crackmes/chapter5/lvlFour$ strings lvl4
 /lib64/ld-linux-x86-64.so.2
 libc.so.6
-\_\_stack\_chk\_fail
-\_\_libc\_start\_main
+__stack_chk_fail
+__libc_start_main
 setenv
-\_\_gmon\_start\_\_
-GLIBC\_2.4
-GLIBC\_2.2.5
+__gmon_start__
+GLIBC_2.4
+GLIBC_2.2.5
 D$(1
 P@UH
 TTQ\\]TH
@@ -130,7 +130,7 @@ Location of setenv call:
 
 Continuing execution until just before `setenv` call and examining value of `rsp`:
 <pre>
-(gdb) b \*0x400524
+(gdb) b *0x400524
 Breakpoint 3 at 0x400524
 (gdb) c
 Continuing.
