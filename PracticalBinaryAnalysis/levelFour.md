@@ -81,7 +81,7 @@ The string beginning with `XaDht` looks like it could be potentially manipulated
   40050a:	88 14 04             	mov    BYTE PTR [rsp+rax\*1],dl
   40050d:	48 83 c0 01          	add    rax,0x1
   400511:	48 83 f8 20          	cmp    rax,0x20
-  400515:	75 e9                	jne    400500 <\_\_libc\_start\_main@plt+0x80>
+  400515:	75 e9                	jne    400500 <__libc_start_main@plt+0x80>
 </pre>
 
 In this section of the disassembly, we can see a byte is being loaded into `edx`, XOR'd with some byte being loaded from offset `0x4006d8`, and loaded back onto the stack. It appears `rax` contains a loop counter which runs 20 times -- If the loop has not run 20 times, it grabs the next byte and XORs it once again. Let's take a look at the program execution in `gdb` to get a better idea of what's going on
@@ -116,7 +116,7 @@ Continuing.
 Breakpoint 1, 0x0000000000400500 in ?? ()
 (gdb) x/s $rsp
 0x7fffffffdeb0:	"<b>656cf8ae</b>WQ\005\v\036P@U\vTTQ\\\\]TI\027\027q\a^\037i"
-<pre>
+</pre>
 
 The `setenv` call is made at `0x400524`. We can see the final result of the `xor` loop by setting a breakpoint at that address and examining the `$rsp` register.
 
