@@ -11,7 +11,7 @@ All challenges are solved on a VM provided by the book.
 The hint for this level is:
 
 ```bash
-binary@binary-VirtualBox:~/crackmes/chapter5$ ./oracle 84b34c124b2ba5ca224af8e33b077e9e -h
+binary@binary-VirtualBox:~$ ./oracle 84b34c124b2ba5ca224af8e33b077e9e -h
 Combine the parts
 ```
 
@@ -25,7 +25,7 @@ lvl2: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, i
 `ltrace` shows the binary is calling some random functions as well as `time`, presumably to seed the random number generation. It then prints what appears to be a byte in hexadecimal representation.
 
 ```bash
-binary@binary-VirtualBox:~/crackmes/chapter5/lvl2$ ltrace ./lvl2
+binary@binary-VirtualBox:~/lvl2$ ltrace ./lvl2
 __libc_start_main(0x400500, 1, 0x7fff6a0538d8, 0x400640 <unfinished ...>
 time(0)                                                                                       = 1591202286
 srand(0x5ed7d1ee, 0x7fff6a0538d8, 0x7fff6a0538e8, 0)                                          = 0
@@ -40,17 +40,19 @@ An `strace` performed on the binary doesn't reveal much of interest.
 By executing the binary a couple of times, we can see it is printing out a different byte on every execution:
 
 ```bash
-binary@binary-VirtualBox:~/crackmes/chapter5/lvl2$ ./lvl2
+binary@binary-VirtualBox:~/lvl2$ ./lvl2
 74
-binary@binary-VirtualBox:~/crackmes/chapter5/lvl2$ ./lvl2
+binary@binary-VirtualBox:~/lvl2$ ./lvl2
 d3
-binary@binary-VirtualBox:~/crackmes/chapter5/lvl2$ ./lvl2
+binary@binary-VirtualBox:~/lvl2$ ./lvl2
 6c
 ```
 
 Let's take a look at the disassembly to find out where these bytes are being grabbed:
 
 ```asm
+binary@binary-VirtualBox:~/lvl2$ objdump -M intel -d lvl2
+...
 400524:	48 8b 3c c5 60 10 60 	mov    rdi,QWORD PTR [rax*8+0x601060]
 40052b:	00 
 40052c:	e8 6f ff ff ff       	call   4004a0 <puts@plt>
@@ -59,7 +61,7 @@ Let's take a look at the disassembly to find out where these bytes are being gra
 At `0x400524` we can see that a byte is being indexed from offset `0x601060` and loaded into `rdi` to be passed to the following `puts` call to print to screen. Let's load lvl2 into `gdb` to examine that memory address:
 
 ```bash
-binary@binary-VirtualBox:~/crackmes/chapter5/lvl2$ gdb lvl2
+binary@binary-VirtualBox:~/lvl2$ gdb lvl2
 GNU gdb (Ubuntu 7.11.1-0ubuntu1~16.5) 7.11.1
 Copyright (C) 2016 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
@@ -78,7 +80,7 @@ Reading symbols from lvl2...(no debugging symbols found)...done.
 (gdb) b *0x400524
 Breakpoint 1 at 0x400524
 (gdb) run
-Starting program: /home/binary/crackmes/chapter5/lvl2/lvl2 
+Starting program: /home/binary/lvl2/lvl2 
 
 Breakpoint 1, 0x0000000000400524 in ?? ()
 (gdb) set disassembly-flavor intel
@@ -108,7 +110,7 @@ We loaded `lvl2` into `gdb`, broke just before the call to `puts`, and examined 
 Let's check our answer:
 
 ```bash
-binary@binary-VirtualBox:~/crackmes/chapter5$ ./oracle 034fc4f6a536f2bf74f8d6d3816cdf88
+binary@binary-VirtualBox:~$ ./oracle 034fc4f6a536f2bf74f8d6d3816cdf88
 +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
 | Level 2 completed, unlocked lvl3         |
 +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
