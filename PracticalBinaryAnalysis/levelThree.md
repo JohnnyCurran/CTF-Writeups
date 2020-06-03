@@ -124,7 +124,7 @@ binary@binary-VirtualBox:~/crackmes/chapter5/lvl3$ ltrace ./patched
 __libc_start_main(0x400550, 1, 0x7ffc26859368, 0x4006d0 <unfinished ...>
 __strcat_chk(0x7ffc26858e60, 0x400754, 1024, 0)                                               = 0x7ffc26858e60
 __strncat_chk(0x7ffc26858e60, 0x7ffc2685a349, 1016, 1024)                                     = 0x7ffc26858e60
-**system("md5sum ./patched"04f2d253b3e6550d83269cf0c561aee5  ./patched**
+system("md5sum ./patched"04f2d253b3e6550d83269cf0c561aee5  ./patched
 ```
 
 Let's try giving the output of the program to the oracle:
@@ -188,8 +188,8 @@ Disassembly of section .init:
 Disassembly of section .plt:
 Disassembly of section .plt.got:
 0000000000400540 <.plt.got>:
-**Disassembly of section .text:
-0000000000400550 <.text>:**
+Disassembly of section .text:
+0000000000400550 <.text>:
 Disassembly of section .fini:
 0000000000400744 <.fini>:
 ```
