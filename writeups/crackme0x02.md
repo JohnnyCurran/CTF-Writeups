@@ -1,134 +1,164 @@
 ## Crackme0x02
 
-Far too in-depth line-by-line write-up of reverse engineering Crackme0x02 from [this repo](https://github.com/leotindall/crackmes)
+All crackmes are sourced from [this repo](https://github.com/leotindall/crackmes)
 
-The source for the same crackme's are also hosted in this repo in the [crackmes](/crackmes) directory
+Analysis of binary performed on a VirtualBox Ubuntu 18.04 VM
 
-The [tutorial](https://leotindall.com/tutorial/an-intro-to-x86_64-reverse-engineering/) for this Crackme reviews a dissassembly that was different than the one I had when I ran it through objdump and radare2 both on my mac and a virtual linux box.
+### Getting Started ###
 
-So, after loading up the binary in radare2 I went to work on figuring out the differences in my binary and the one presented in the tutorial. I did a quick overview of the tutorial text so admittedly I knew what I was looking for going in, but I still believe it was a good exercise due to the differences in the instructions that were executed.
-
-### Disassembly with radare2 ###
-
-To begin, I looked at the beginning block of the main function, or `entry0`. Below is the output from radare2 after executing `pdf@entry0`
-
-```asm
-0x100000e20      55             push rbp                   ; [00] -r-x section size 281 named 0.__TEXT.__text
-0x100000e21      4889e5         mov rbp, rsp
-0x100000e24      4883ec30       sub rsp, 0x30              ; '0'
-0x100000e28      c745fc000000.  mov dword [local_4h], 0
-0x100000e2f      897df8         mov dword [local_8h], edi
-0x100000e32      488975f0       mov qword [local_10h], rsi
-0x100000e36      837df802       cmp dword [local_8h], 2    ; rdi ; [0x2:4]=-1
-0x100000e3a      0f841d000000   je 0x100000e5d
-```
-In the above block, the stack frame pointer is pushed onto the stack, the stack pointer is set to the frame pointer, and 30 bytes are allocated to the stack. Then, 3 local variables are insantiated. The line that matters here is `mov dword [local_8h], edi`. This moves the lower 32 bits of the `RDI` register into the local variable `[local_8h]`. This value is then compared against the constant 2 in `cmp dword [local_8h], 2`. So what this line is *really* doing is this:
-
-`cmp edi, 2`
-
-Which is comparing the number of arguments passed to the function to the constant 2. The 2 arguments are the name of the program and the password. If there are not exactly 2 arguments (really just one), then the program will execute the following failure block below:
-
-```asm
-0x100000e40      488d3d130100.  lea rdi, str.Need_exactly_one_argument. ; section.3.__TEXT.__cstring ; 0x100000f5a ; "Need exactly one argument.\n"
-0x100000e47      b000           mov al, 0
-0x100000e49      e8ec000000     call sym.imp.printf        ; int printf(const char *format)
-0x100000e4e      c745fcffffff.  mov dword [local_4h], 0xffffffff ; -1
-0x100000e55      8945e0         mov dword [local_20h], eax
-0x100000e58      e9d3000000     jmp 0x100000f30
-```
-
-The above block of assembly loads the failure string into `RDI`, then calls `printf` to print the failure message to the screen, and `jmp`s to the exit block.
-
-After the first argument check is out of the way, the password-checking part of the program begins. This is really where the disassembly I was shown and the disassembly presented on the tutorial website began to diverge. Where the tutorial showed 4 lines of easy to dissect assembly, the version I had disassembled was slightly less clear:
-
-```asm
-0x100000e5d      488d05120100.  lea rax, str.password1     ; 0x100000f76 ; "password1"
-0x100000e64      488945e8       mov qword [local_18h], rax
-0x100000e68      c745e4000000.  mov dword [local_1ch], 0
-0x100000e6f      31c0           xor eax, eax
-0x100000e71      88c1           mov cl, al
-0x100000e73      488b55e8       mov rdx, qword [local_18h]
-0x100000e77      486375e4       movsxd rsi, dword [local_1ch]
-0x100000e7b      0fbe0432       movsx eax, byte [rdx + rsi]
-0x100000e7f      83f800         cmp eax, 0
-0x100000e82      884ddf         mov byte [local_21h], cl
-0x100000e85      0f841b000000   je 0x100000ea6
-```
-
-Starting at `0x100000e5d`, the memory address of `str.password1` is loaded in to `RAX`. Although this string seems suspicious at first glance, attempting to input it to the crackme results in a failure. 
-
-The next two lines both declare local variables. The variable `[local_18h]` becomes a placeholder for `str.password1`'s location in memory, and `[local_1ch]` becomes a 16-bit variable with value 0.
-
-Next, the lower 32 bits `EAX` of the `RAX` register are zeroed out by the XOR instruction.
-
-Then, `al` is loaded into `cl`. Because `eax` was just zeroed out, `cl` now holds a value of 0.
-
-`rdx` is then loaded with the memory address of `str.password` which is stored in `[local_18h]`
-
-`movsxd rsi, dword [local_1ch]` is a very roundabout way of zeroing out the entire `rsi` register. It loads the 16-bit 0 value from the local variable and extends the sign through the rest of the 48 bits in the register.
-
-`movsx eax, byte[rdx + rsi]` loads the first byte of the value at memory address `[rdx + rsi]` into `eax`. Because `rsi` is 0, and `rdx` contains the memory location of `str.password1`, this instruction became an *incredibly* long-winded way of performing the following 3 instructions.
-
-```asm
-lea rax, str.password1 ; 0x100000f76
-mov rdx, rax
-movsx eax, byte[rdx]
-```
-
-So - after all is said and done, `eax` contains the lowest byte of the value stored at memory location `rax`, or `0x10000f76` which we know contains the string `password1`. The first byte of this string is `p`.
-
-The next instruction, `cmp eax,0` compares this value to 0. This comparison will of course always fail, as `p` will never be equal to `0`.
-
-The next instruction `mov byte[local_21h], cl` moves the 0 value stored in cl into the first byte of local variable `[local_21h]`. 
-
-After all of that confusing asm executed, a jump is taken/not taken based on the result of the `cmp eax, 0`. As noted, this comparison will always fail, so the jump will never be taken.
-
-The assembly that is executed after the untaken jump is much more pertinent to the execution of the program.
-
-```asm
-0x100000e8b      488b45f0       mov rax, qword [local_10h]
-0x100000e8f      488b4008       mov rax, qword [rax + 8]   ; [0x8:8]=-1 ; 8
-0x100000e93      48634de4       movsxd rcx, dword [local_1ch]
-0x100000e97      0fbe1408       movsx edx, byte [rax + rcx]
-0x100000e9b      83fa00         cmp edx, 0
-0x100000e9e      400f95c6       setne sil
-0x100000ea2      408875df       mov byte [local_21h], sil
-0x100000ea6      8a45df         mov al, byte [local_21h]
-0x100000ea9      a801           test al, 1                 ; rsi
-0x100000eab      0f8505000000   jne 0x100000eb6
-0x100000eb1      e95a000000     jmp 0x100000f10
-```
-
-`mov rax, qword [local_10h]` Moves the value at `[local_10h]` into `RAX`. This is the value of the `rsi` register at the beginning of the program.
-
-`move rax, qword [rax+8]` moves the memory value at `rax + 8` into the rax register. When this location in memory is examined, it turns out to be the attempted password argument we passed to the crackme. Now we're getting somewhere.
-
-`movsxd rcx, dword [local_1ch]` zeroes out the `rcx` register
-
-`movsx edx, byte [rax + rcx]` moves the first byte of the value at `[rax + rcx]` into `edx`. Because `rcx` was zeroed out, this instruction is essentially:
-`movsx edx, byte [rax]` where, as we just saw, `rax` contains the string that we passed in as an argument to the function. Therefore, `dl` now contains the first letter of the password we input to the crackme.
-
-`cmp edx, 0`. This instruction compares our first letter to the constant 0. Therefore, we know now that the first letter must be a 0. The next 3 instructions:
-
-```asm
-setne sil
-mov byte [local_21h], sil
-mov al, byte [local_21h]
-```
-
-Set the comparison flag and store it in a local variable as well as the lower 8 bits of the `rax` register, `al`. The result of the flag is then tested:
-
-`test al, 1`. Test the result of the `cmp` against the value of 1. 
-
-The unconditional `jmp` jumps to the success condition, so that is the jump we want to take. The `jne`/`jnz` will drop us into a block of asm with one more conditional check and a failure condition if it is not met. 
-
-It was at this point that I patched the binary by writing a `jmp` to the `jne` instruction, so that the success condition is always hit. 
-
-I saved the altered binary as crackme02_patch and the binary now accepts any password you pass to it:
+After compilation, we have a 64-bit ELF binary with symbols included. Similarly to crackme0x01, we begin by attempting to execute it. This binary also expects exactly one argument.
 
 ```bash
-./crackme02_patch wrongPassword
-Yes, wrongPassword is correct!
+johnny:crackmes$ file crackme02
+crackme02: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]=aa8efed44085f874c65cfed91eb37d04db829586, not stripped
+
+johnny:crackmes$ ./crackme02
+Need exactly one argument.
 ```
 
-If you're so inclined, you can get the patched binary under the [patched crackme's](/patchedCrackmes) directory of the repo
+Running `strings` on the binary reveals a strings list extremely similar to CrackMe0x01. It even includes the same `password1` string. Unfortunately that does not solve the binary:
+
+```bash
+johnny:crackmes$ ./crackme02 password1
+No, password1 is not correct.
+```
+
+ltrace and strace don't reveal anything out of the ordinary. Let's go to the disassembly.
+
+### Disassembly ###
+
+We'll begin by examining the `.text` section and the `main` function within (init sections are omitted for brevity).
+
+```asm
+johnny:crackmes$ objdump -M intel -D crackme02 --section=.text
+
+crackme02:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+...
+000000000000068a <main>:
+68a:	55		        push   rbp
+68b:	48 89 e5	        mov    rbp,rsp
+68e:	48 83 ec 20	        sub    rsp,0x20
+692:	89 7d ec	        mov    DWORD PTR [rbp-0x14],edi
+695:	48 89 75 e0	        mov    QWORD PTR [rbp-0x20],rsi
+699:	83 7d ec 02	        cmp    DWORD PTR [rbp-0x14],0x2
+69d:	74 16		        je     6b5 <main+0x2b>
+69f:	48 8d 3d 5e 01 00 00	lea    rdi,[rip+0x15e]        # 804 <_IO_stdin_used+0x4>
+6a6:	e8 a5 fe ff ff	        call   550 <puts@plt>
+6ab:	b8 ff ff ff ff	        mov    eax,0xffffffff
+6b0:	e9 c7 00 00 00	        jmp    77c <main+0xf2>
+6b5:	48 8d 05 63 01 00 00    lea    rax,[rip+0x163]        # 81f <_IO_stdin_used+0x1f>
+6bc:	48 89 45 f8	        mov    QWORD PTR [rbp-0x8],rax
+6c0:	c7 45 f4 00 00 00 00    mov    DWORD PTR [rbp-0xc],0x0
+6c7:	eb 5d		        jmp    726 <main+0x9c>
+```
+
+We see the standard function prologue
+```
+68a:    55		push   rbp
+68b:    48 89 e5        mov    rbp,rsp
+68e:    48 83 ec 20     sub    rsp,0x20
+```
+
+The compiler assigns some local variables and then checks to see that there is exactly one argument provided (cmp with `0x02` because first argument supplied is always the name of the program, in this case "crackme02"):
+
+```asm
+692:    89 7d ec            mov    DWORD PTR [rbp-0x14],edi
+695:    48 89 75 e0         mov    QWORD PTR [rbp-0x20],rsi
+699:    83 7d ec 02         cmp    DWORD PTR [rbp-0x14],0x2
+```
+
+In the event no argument is supplied, the program loads the address at memory location `0x804` into `rdi` and calls `puts`, writing the string to the screen. It then jumps to `0x77c`, terminating execution.
+
+Just as we'd expect, the string at `0x804` is the one telling us to supply exactly one argument:
+
+```asm
+johnny:crackmes$ xxd crackme02 | grep 00000800 --after-context=1
+00000800: 0100 0200 4e65 6564 2065 7861 6374 6c79  ....Need exactly
+00000810: 206f 6e65 2061 7267 756d 656e 742e 0070   one argument..p
+```
+
+The more intereseting part of the program execution happens when we take the `je` at `0x69d` to `0x6b5`, meaning we supplied the program with exactly one argument. Here you can see we load the string at `0x81f` into two local variables and take the jump to `0x726`.
+
+What is the value stored at `0x81f`? Let's take a look:
+```asm
+johnny:crackmes$ xxd crackme02 | grep 00000810 --after-context=1
+00000810: 206f 6e65 2061 7267 756d 656e 742e 0070   one argument..p
+00000820: 6173 7377 6f72 6431 004e 6f2c 2025 7320  assword1.No, %s 
+```
+
+Looking at the memory dump we can see that it is the same `password1` string from the first binary. We know that the plain string does not work as the key to the crackme, so it is probably being manipulated in some way.
+
+Let's take a look at the disassembly a little further. When one argument is supplied to the binary, we take the jump to `0x6b5`:
+
+```asm
+ 6b5:	48 8d 05 63 01 00 00 	lea    rax,[rip+0x163]        # 81f <_IO_stdin_used+0x1f>
+ 6bc:	48 89 45 f8          	mov    QWORD PTR [rbp-0x8],rax
+ 6c0:	c7 45 f4 00 00 00 00 	mov    DWORD PTR [rbp-0xc],0x0
+ 6c7:	eb 5d                	jmp    726 <main+0x9c>
+ ```
+
+ The string "password1" is loaded into `rax`, assigned to some local variables, and we jump to `0x726`.
+
+ When we jump, we encounter a null-byte (end of string) check:
+
+```asm
+ 726:	8b 45 f4             	mov    eax,DWORD PTR [rbp-0xc]
+ 729:	48 63 d0             	movsxd rdx,eax
+ 72c:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+ 730:	48 01 d0             	add    rax,rdx
+ 733:	0f b6 00             	movzx  eax,BYTE PTR [rax]
+ 736:	84 c0                	test   al,al
+ 738:	74 1e                	je     758 <main+0xce>
+ ```
+ If the string has ended, we will jump to a failure point at `0x758`. The failure string is loaded and the program stops execution.
+
+ However, if the string has not yet terminated, we take a jump to `0x6c9`, where the pieces begin to fall into place:
+
+<pre>
+ 6c9:	8b 45 f4             	mov    eax,DWORD PTR [rbp-0xc]
+ 6cc:	48 63 d0             	movsxd rdx,eax
+ 6cf:	48 8b 45 f8          	mov    rax,QWORD PTR [rbp-0x8]
+ 6d3:	48 01 d0             	add    rax,rdx
+ 6d6:	0f b6 00             	movzx  eax,BYTE PTR [rax]
+ 6d9:	0f be c0             	movsx  eax,al
+ <b>
+ 6dc:	8d 48 ff             	lea    ecx,[rax-0x1]
+ </b>
+ 6df:	48 8b 45 e0          	mov    rax,QWORD PTR [rbp-0x20]
+ 6e3:	48 83 c0 08          	add    rax,0x8
+ 6e7:	48 8b 10             	mov    rdx,QWORD PTR [rax]
+ 6ea:	8b 45 f4             	mov    eax,DWORD PTR [rbp-0xc]
+ 6ed:	48 98                	cdqe   
+ 6ef:	48 01 d0             	add    rax,rdx
+ 6f2:	0f b6 00             	movzx  eax,BYTE PTR [rax]
+ 6f5:	0f be c0             	movsx  eax,al
+<b>
+ 6f8:	39 c1                	cmp    ecx,eax
+</b>
+ 6fa:	74 26                	je     722 <main+0x98>
+ </pre>
+
+Here, a byte is taken from `$rax` ("password1"), subtracted by 1 at `0x6dc`, and loaded into `$ecx`. The next few instructions load our supplied argument ("foobar") into `$rax`, is indexed by `$rdx`, and then compared at `0x6f8`. It would appear this loop takes each character in the string "password1", subtracts 1, and then compares it against our supplied argument. By subtracting 1 from each character in "password1", we get the string "o```rrvnqc0`".
+
+Let's try checking it against our program (with an escape \ for the backtick):
+
+```bash
+johnny:crackmes$ ./crackme02 o\`rrvnqc0ff
+Yes, o```rrvnqc0ff is correct!
+```
+
+CrackMe solved!
+
+An interesting note: Simply passing the letter "o" to the program will solve it as well. I'll have to follow up on why this is. Other combinations of characters starting with the letter "o" do not work.
+
+```bash
+johnny:crackmes$ ./crackme02 o
+Yes, o is correct!
+johnny:crackmes$ ./crackme02 oo
+No, oo is not correct.
+johnny:crackmes$ ./crackme02 ohno
+No, ohno is not correct.
+```
