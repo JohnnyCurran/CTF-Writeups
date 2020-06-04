@@ -147,7 +147,7 @@ Let's try checking it against our program (with an escape \ for the backtick):
 
 ```bash
 johnny:crackmes$ ./crackme02 o\`rrvnqc0ff
-Yes, o```rrvnqc0ff is correct!
+Yes, o`rrvnqc0ff is correct!
 ```
 
 CrackMe solved!
