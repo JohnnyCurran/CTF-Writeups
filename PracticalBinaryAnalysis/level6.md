@@ -1,4 +1,4 @@
-## Practical Binary Analysis Chapter 5 Level 5
+## Practical Binary Analysis Chapter 5 Level 6
 
 Chapter 5 of Practical Binary Analysis by Dennis Andriesse contains several CTF challenges at the end of chapter 5.
 
@@ -26,13 +26,9 @@ libc.so.6
 &#95;&#95;stack&#95;chk&#95;fail
 putchar
 &#95;&#95;sprintf&#95;chk
-<b>
-strcmp
-</b>
+<b>strcmp</b>
 &#95;&#95;libc&#95;start&#95;main
-<b>
-setenv
-</b>
+<b>setenv</b>
 &#95;&#95;gmon&#95;start&#95;&#95;
 GLIBC&#95;2.3.4
 GLIBC&#95;2.4
@@ -41,12 +37,10 @@ UH-
 AWAVA
 AUATL
 []A\A]A^A
-<b>
-DEBUG: argv[1] = %s
+<b>DEBUG: argv[1] = %s
 get_data_addr
 0x%jx
-DATA_ADDR
-</b>
+DATA_ADDR</b>
 ; * 3$"
 GCC: (Ubuntu 5.4.0-6ubuntu1~16.04.9) 5.4.0 20160609
 .shstrtab
@@ -56,7 +50,7 @@ GCC: (Ubuntu 5.4.0-6ubuntu1~16.04.9) 5.4.0 20160609
 .......
 </pre>
 
-The strings in bold reveal some information: It appears the argument passed to the function is being checked in some way based on the `DEBUG: argv[1] = %s` string as well as the call to `strcmp` revealed in the above output. There's a `%jx` format specifier presumably to print out the data address referred to by the `DATA_ADDR` strings. Additionally, there appears there will be a call to setenv somewhere in the program execution. Maybe that call will contain the flag, like in level 4.
+The strings in bold reveal some information: It appears the argument passed to the function is being checked in some way based on the `DEBUG: argv[1] = %s` string as well as the call to `strcmp` revealed in the above output. There's a `%jx` format specifier presumably to print out the data address referred to by the `DATA_ADDR` strings. Additionally, there appears there will be a call to setenv somewhere in the program execution. Maybe that call will contain the flag - similarly to level 4.
 
 Program execution prints out all primes below 100. It does not appear to change when given an arbirtrary argument(s):
 
@@ -102,8 +96,6 @@ __printf_chk(1, 0x400947, 97, 0x7ffffffd)                                       
 putchar(10, 3, 0, 0x7ffffffd2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
 )                                                                 = 10
 +++ exited (status 0) +++
-binary@binary-VirtualBox:~/crackmes/chapter5/lvlSix$ ./lvl6
-2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97
 
 binary@binary-VirtualBox:~/crackmes/chapter5/lvlSix$ strace ./lvl6
 execve("./lvl6", ["./lvl6"], [/* 60 vars */]) = 0
@@ -155,9 +147,7 @@ Since this program seems to expect an argument based on the `argv[1]` string, le
 <pre>
 binary@binary-VirtualBox:~/crackmes/chapter5/lvlSix$ ltrace ./lvl6 foobar
 __libc_start_main(0x4005f0, 2, 0x7fff68222678, 0x400890 <unfinished ...>
-<b>
-strcmp("foobar", "get_data_addr")                                                             = -1
-</b>
+<b>strcmp("foobar", "get_data_addr")                                                             = -1</b>
 __printf_chk(1, 0x400947, 2, 100)                                                             = 2
 __printf_chk(1, 0x400947, 3, 0x7ffffffe)                                                      = 2
 __printf_chk(1, 0x400947, 5, 0x7ffffffe)                                                      = 2
@@ -194,13 +184,12 @@ Here we can see that our argument `foobar` is being compared to `get_data_addr`.
 <pre>
 binary@binary-VirtualBox:~/crackmes/chapter5/lvlSix$ ./lvl6 get_data_addr
 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
+
 binary@binary-VirtualBox:~/crackmes/chapter5/lvlSix$ ltrace ./lvl6 get_data_addr
 __libc_start_main(0x4005f0, 2, 0x7ffcd2c3e648, 0x400890 <unfinished ...>
 strcmp("get_data_addr", "get_data_addr")                                                      = 0
 __sprintf_chk(0x7ffcd2c3e140, 1, 1024, 0x400937)                                              = 8
-<b>
-setenv("DATA_ADDR", "0x4006c1", 1)                                                            = 0
-</b>
+<b>setenv("DATA_ADDR", "0x4006c1", 1)                                                            = 0</b>
 __printf_chk(1, 0x400947, 2, 100)                                                             = 2
 __printf_chk(1, 0x400947, 3, 0x7ffffffe)                                                      = 2
 __printf_chk(1, 0x400947, 5, 0x7ffffffe)                                                      = 2
@@ -237,9 +226,7 @@ With the correct argument passed the program is now setting an environment varia
   4006b8:	8b 44 24 24          	mov    eax,DWORD PTR [rsp+0x24]
   4006bc:	83 f8 00             	cmp    eax,0x0
   4006bf:	74 10                	je     4006d1 <__sprintf_chk@plt+0x101>
-  <b>
-  4006c1:	2e 29 c6             	cs sub esi,eax
-  </b>
+  <b>4006c1:	2e 29 c6             	cs sub esi,eax</b>
   4006c4:	4a 0f 03 a6 ee 2a 30 	rex.WX lsl rsp,WORD PTR [rsi+0x7f302aee]
   4006cb:	7f 
   4006cc:	ec                   	in     al,dx
