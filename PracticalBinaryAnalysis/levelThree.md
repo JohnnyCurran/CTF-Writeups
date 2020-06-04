@@ -11,6 +11,8 @@ binary@binary-VirtualBox:~/crackmes/chapter5$ ./oracle 034fc4f6a536f2bf74f8d6d38
 Fix four broken things
 ```
 
+### Analysis
+
 We check out the binary with the `file` utility:
 
 ```bash

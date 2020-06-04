@@ -15,6 +15,8 @@ binary@binary-VirtualBox:~$ ./oracle 84b34c124b2ba5ca224af8e33b077e9e -h
 Combine the parts
 ```
 
+### Analysis
+
 We are presented with a simple binary called `lvl2`. Examining the binary with the `file` utility shows it's a 64-bit ELF executable stripped of symbols. Nothing seems out of the ordinary. The `strings` utility does not reveal any flag-like strings.
 
 ```bash

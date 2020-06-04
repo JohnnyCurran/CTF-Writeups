@@ -13,6 +13,8 @@ Watch closely while I run
 
 This hint lets us know this will probably involve some dynamic analysis, not strictly static.
 
+### Analysis
+
 As usual, we run through `file`, `strings`, `ltrace`, and `strace` before executing the binary itself.
 
 
