@@ -124,7 +124,7 @@ decrypted flag = ea36cbE64A35fb5d60e06bb1f
 [Inferior 1 (process 14443) exited normally]
 (gdb) 
 </pre>
-There are some control characters which do not show up well in the markdown, but they are a solid indicator our flag is not exactly what we are looking for. We can see the `key` was set to `0x00400500`. Notably, this is the same address we altered to redirect execution. Maybe if we patch the binary to contain the address we want, it will be loaded correctly as the correct key. 
+There are some control characters which do not show up well in the markdown, but they are a solid indicator our flag is not exactly what we are looking for. We can see the `key` was set to `0x00400500`. Notably, this is the same address we altered to redirect execution. Maybe if we patch the binary to contain the address we want, it will be loaded as the correct key. 
 
 Using xxd, we look for the instruction bytes at `0x40053d`:
 
@@ -151,7 +151,6 @@ Which, when executed, gives us the proper flag:
 binary@binary-VirtualBox:~/crackmes/chapter5/lvlFive$ ./patched
 key = 0x00400620
 decrypted flag = 0fa355cbec64a05f7a5d050e836b1a1f
-binary@binary-VirtualBox:~/crackmes/chapter5/lvlFive$ cd ..
 binary@binary-VirtualBox:~/crackmes/chapter5$ ./oracle 0fa355cbec64a05f7a5d050e836b1a1f
 +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
 | Level 5 completed, unlocked lvl6         |
