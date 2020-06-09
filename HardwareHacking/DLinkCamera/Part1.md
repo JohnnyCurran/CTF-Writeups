@@ -12,6 +12,6 @@ The goals of hacking this camera are to:
 
 I began by taking apart the camera to hunt for debug ports - Here's what the board looks like with its cover removed:
 
-![Debug Ports](https://imgur.com/aK1x81u)
+![Debug Ports](https://imgur.com/aK1x81u.jpg)
 
-![Flash EEPROM](https://imgur.com/KE5oi7h)
+![Flash EEPROM](https://imgur.com/KE5oi7h.jpg)
