@@ -2,7 +2,7 @@
 
 In this write up, we'll be taking a look at the [D-Link DCS-8010LH](https://www.dlink.com/en/products/dcs-8010lh-mydlink-hd-wi-fi-camera)
 
-The goals of this reversing will be to:
+The goals of hacking this camera are to:
 
 1. Obtain a shell on the device
 2. Explore the filesystem from the shell
@@ -12,8 +12,6 @@ The goals of this reversing will be to:
 
 I began by taking apart the camera to hunt for debug ports - Here's what the board looks like with its cover removed:
 
-![Debug Ports]
-(https://imgur.com/aK1x81u)
+![Debug Ports](https://imgur.com/aK1x81u)
 
-![Flash EEPROM]
-(https://imgur.com/KE5oi7h)
+![Flash EEPROM](https://imgur.com/KE5oi7h)
