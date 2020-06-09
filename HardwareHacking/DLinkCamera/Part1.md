@@ -32,7 +32,7 @@ One interesting caveat of connecting to this board's debug port was the pins wer
 
 After I switched the RX to connect to RX and TX to connect to TX, we were able to start receiving data.
 
-### BAUD Rates
+## BAUD Rates
 
 Once I started receiving data from the board during boot, it was all gibberish. There are involved ways of determining baud rautes using logic analyzers but the easy way is to simply guess a bunch of common rates. With the help of [pyserial](https://github.com/pyserial/pyserial/blob/master/serial/tools/miniterm.py) we finally stumbled upon a baud rate of 57600:
 
@@ -48,6 +48,8 @@ Skipping flash_init
 ```
 
 Now we've established the baud rate is `57600`. Let's see if we can get shell access.
+
+## Shell Access
 
 Letting the boot cycle continue, we are eventually able to interrupt the boot process which spawns us a U Boot shell:
 
