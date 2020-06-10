@@ -128,20 +128,87 @@ Nothing very interesting in here. We can see some calls to `printf`, `puts`, and
 	    \           0x00000772      c3             ret
 ```
 
+After passing our exactly 1 argument requirement at `0x69d`, execution passes to `0x6e9` and enters the main loop.
+Interestingly, as the password argument we passed to the binary is iterated over, it is never compared to a "source of truth" value - only the end of the string is checked for at `0x6ff`.
 
-loops through checking for null char, then compares local\_8h to immediate value 0x10.. It does look like local\_8h is being used as the index. Does length need to be 10??
+It is after this "end-of-string" check that is most interesting to us in terms of the solution:
 
-Quick run through of the loop shows local8h incrementing as an index of our string..
+```asm
+0x000006ff      84c0           test al, al
+0x00000701      75c6           jne 0x6c9
+0x00000703      837df810       cmp dword [local_8h], 0x10  ; [0x10:4]=0x3e0003
+0x00000707      7510           jne 0x719
+0x00000709      817dfce20600.  cmp dword [local_4h], 0x6e2 ; [0x6e2:4]=0x83fc4501
+```
 
-0x10 == 16 im an idiot. Length of password needs to be 16
+Here, we can see that the local variable [local\_8h] is compared to the immediate value `0x10`, or 16. Immediately after that, the local variable [local\_4h] is compared to immediate value `0x6e2`. What are these magic numbers and what do they mean?
 
-So local4h gets the value of eax added every iteration. do the char values of our password need to equal the immediate 0x6e2? (1,762)
+Inside the main loop these values are only manipulated once apiece:
 
-fifteen letter n's get us to 1,650. Leaving us with 112 (0x70), or the character p.
+```asm
+0x000006e2      0145fc         add dword [local_4h], eax
+0x000006e5      8345f801       add dword [local_8h], 1
+```
 
-So:
-nnnnnnnnnnnnnnnp
+Each loop iteration, [local\_8h] is incremented by 1 and [local\_4h] adds the current value of `$eax`. local\_8h may hold the value of the current index while `$eax` may hold the byte value of each character of our password. A quick verification with `gdb` shows this to be true:
 
-Is (one of) the correct passwords!
+```bash
+Breakpoint 10, 0x00005555555546e9 in main ()
+(gdb) x/x $rbp-0x8
+0x7fffffffdf58:	0x00
+(gdb) c
+Continuing.
+
+Breakpoint 10, 0x00005555555546e9 in main ()
+(gdb) x/x $rbp-0x8
+0x7fffffffdf58:	0x01
+(gdb) c
+Continuing.
+
+Breakpoint 10, 0x00005555555546e9 in main ()
+(gdb) x/x $rbp-0x8
+0x7fffffffdf58:	0x02
+(gdb) x/x $rbp-0x8
+0x7fffffffdf58:	0x02
+```
+So we can see that `local_8h` is our iterator. What about `local_4h`? We can check by setting a breakpoint on the `add` instruction and check the value of `$eax`. We execute the program with the password argument `0123456789aebcdef`:
+
+```bash
+Breakpoint 13, 0x00005555555546e2 in main ()
+(gdb) info registers $rax
+rax            0x30 48
+(gdb) c
+Continuing.
+
+Breakpoint 13, 0x00005555555546e2 in main ()
+(gdb) info registers $eax
+eax            0x31 49
+```
+On these two iterations, the ASCII values of `0x30` and `0x31` are `0` and `1`, respectively. It looks safe to say that `local_4h` is incremented by the byte value of our password on each iteration.
+
+So - what's the password? Let's revisit the final comparisons:
+
+```asm
+0x00000703      837df810       cmp dword [local_8h], 0x10  ; [0x10:4]=0x3e0003
+0x00000707      7510           jne 0x719
+0x00000709      817dfce20600.  cmp dword [local_4h], 0x6e2 ; [0x6e2:4]=0x83fc4501
+```
+
+`local_8h`, our iterator (length) value, is compared to `0x10`. Our password should have a length, then, of 16 characters.
+
+`local_4h`, our accumulator (sum) value, is compared to `0x6e2`. What values can we pass to reach this amount? Some quick math gives us an answer:
+
+`0x6e2 == 1,762`. `1,762 / 16 = 110.125`. No ASCII characters can have decimal values, so we will take `15 * 110 = 1,650`. That leaves us with `1,762 - 1,650 = 112`.
+
+In hex, 110 is `0x6e`, or `n`. 112 is `0x70`, or `p`. Combined, these form the string:
+
+`nnnnnnnnnnnnnnnp`
+
+Let's give it to our binary:
+
+```bash
+johnny:crackmes$ ./a.out nnnnnnnnnnnnnnnp
+Yes, nnnnnnnnnnnnnnnp is correct!
+```
 
 Now the question is, how many combinations of 0x6e2 can be made? To be continued
