@@ -161,64 +161,21 @@ Let's take a look at the disassembly for the `check_with_mod` function:
 \           0x000007c8      c3             ret
 ```
 
-This function takes an offset, divides by an argument passed to it, and does modulo division to check the remainder. If the remainder is 0, we pass the check.
+`rdi` contains the password string, `rsi` has the iterator (4), and `rdx` contains the divisor
 
+This function takes the password string, sums the next 4 characters ASCII values and divides the sum by the divisor passed to the function. If the remainder of the modulo division is 0, the check is passed.
 
-String length needs to be 16.
+This check occurs four times (for each 4-character section of the string). Each check must pass in order for the password to be considered valid.
 
-Execution then jumps to `0x826`. Then it chops off the first two characters of our password string, leaving `23456789abcdef`
+The divisors passed on each instance are 3, 4, 5, and 4.
 
-Compares `2` with `B`. So position `2` should be char `B`.
+We now know the rules to generate a successful password are:
 
-It then compares position `d` (13) to the char `Q`. So we replace `d` in our string with `Q`.
+1. It must be exactly 16 characters in length
+2. The 3rd character (index 2) must be the letter `B`
+3. The 14th character (index 13) must be the letter `Q`
+4. Each "section" of 4 characters' ASCII values must be divisible by 3, 4, 5, and 4, respectively.
 
-Now we need to dig into this `check_with_mod` method.
+With this knowledge, we are able to create a keygen to generate a password. [Click to view source](../code/crackme0x05/crack5keygen.cpp)
 
-rdi, rsi, rdx <-- argument order
-
-RDI has pw string
-rsi has 4 - Iterator
-rdx has 3 - Divisor
-
-`check_with_mod` method:
-
-Loops 4 times (0-3).
-
-It indexes the password string, then adds that byte value to local8h var.
-
-Is idiv instruction using rdx, with value 3? So it's mod 3?
-
-Sets return value to 1 if the remainder of the division was 0 (I think. Need to double check how the ZF is set on the idiv).
-
-So is this gonna check different sections of the password with a modulo division? - Yes, it appears it does do that
-
-
-First pass thru: `$eax` holds `0xd6` or `214` -- decimal values summed of `01B3` equal `214` so that was right.
-
-Yes - divided by 3.
-
-```bash
-(gdb) 
-eax            0x47 71
-edx            0x1  1
-```
-
-`$eax` holds result of division which is `71` and `edx` holds remainder which is `1`.
-
-We then check to see if `$eax` is `0` with `tst` instruction
-
-We set `al` to 1 if `$eax` was 0. So we don't want a remainder?
-
-`main` checks to see if return value `$eax` is `0` and jumps to the next comparison if the return value is NOT equal to 0.
-
-So we want a clean division based on the byte values that it sums
-
-Byte value of `216` will give us what we want. So we have `B` in there for sure. Let's increment a value by 2 to give us that value. Let's alter `0` at position `0` to `2`:
-
-New password to pass the first check:
-
-`21B3456789abcQef`
-
-Str len 16: Takes every 4 char section and mods by a diff value - 3, 4, 5, 4. Index 2 must be 'B', index 0xD, 13, must be 'Q'.
-
-Wrote a C# and C++ Program to be a keygen.
+Passing our crackme output to the crackme gives a successful password result:
