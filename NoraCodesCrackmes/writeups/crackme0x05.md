@@ -179,3 +179,14 @@ We now know the rules to generate a successful password are:
 With this knowledge, we are able to create a keygen to generate a password. [Click to view source](../code/crackme0x05/crack5keygen.cpp)
 
 Passing our crackme output to the crackme gives a successful password result:
+
+```bash
+harbinger@harbinger-X541UA:~$ ./crackme05 `./keygen`
+Yes, bJBqIBadClmBgQMK is correct!
+harbinger@harbinger-X541UA:~$ ./crackme05 `./keygen`
+Yes, oOBtzIFoodauDQFa is correct!
+harbinger@harbinger-X541UA:~$ ./crackme05 `./keygen`
+Yes, ajBaMRCfzLdaRQPa is correct!
+harbinger@harbinger-X541UA:~$ ./crackme05 `./keygen`
+Yes, ecBaqRRcdnpDyQFh is correct!
+```
